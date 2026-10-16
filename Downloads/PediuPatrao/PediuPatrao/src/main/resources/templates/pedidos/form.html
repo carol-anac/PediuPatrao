@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Novo Pedido</title>
+</head>
+<body>
+
+<div th:fragment="content">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold mb-0">
+            <i class="bi bi-bag-plus me-2 text-primary"></i>Novo Pedido
+        </h2>
+        <a th:href="@{/pedidos}" class="btn btn-outline-secondary">Voltar</a>
+    </div>
+
+    <div id="alerta" class="alert alert-danger d-none" role="alert"></div>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+
+            <div class="mb-4">
+                <label for="clienteId" class="form-label fw-medium">
+                    <i class="bi bi-person me-1"></i>Cliente
+                </label>
+                <select id="clienteId" class="form-select">
+                    <option value="" disabled selected>Selecione um cliente</option>
+                    <option th:each="c : ${clientes}" th:value="${c.id}"
+                            th:text="${c.nome} + (${c.telefone} != null ? ' - ' + ${c.telefone} : '')"></option>
+                </select>
+            </div>
+
+            <h5 class="fw-bold">Itens</h5>
+            <div class="table-responsive">
+                <table class="table align-middle">
+                    <thead>
+                        <tr>
+                            <th>Produto</th>
+                            <th style="width: 120px;">Qtd.</th>
+                            <th style="width: 140px;">Subtotal</th>
+                            <th style="width: 60px;"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="itens"></tbody>
+                </table>
+            </div>
+
+            <!-- Modelo de lista de produtos (copiado para cada linha) -->
+            <select id="modelo-produtos" class="d-none">
+                <option value="" data-preco="0">Selecione um produto</option>
+                <option th:each="p : ${produtos}" th:value="${p.id}"
+                        th:attr="data-preco=${p.preco}"
+                        th:text="${p.nome} + ' (R$ ' + ${#numbers.formatDecimal(p.preco, 1, 'POINT', 2, 'COMMA')} + ')'"></option>
+            </select>
+
+            <button type="button" id="btn-add" class="btn btn-outline-primary btn-sm mb-4">
+                <i class="bi bi-plus-lg me-1"></i>Adicionar item
+            </button>
+
+            <div class="text-end mb-4">
+                <div class="fs-5">Total estimado: <strong id="total">R$ 0,00</strong></div>
+                <div class="small text-muted">Valor apenas informativo: o servidor recalcula o total.</div>
+            </div>
+
+            <div class="d-flex gap-2">
+                <button type="button" id="btn-salvar" class="btn btn-primary">
+                    <i class="bi bi-check-lg me-1"></i>Registrar pedido
+                </button>
+                <a th:href="@{/pedidos}" class="btn btn-outline-secondary">Cancelar</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function () {
+            var corpo = document.getElementById('itens');
+            var modelo = document.getElementById('modelo-produtos');
+            var alerta = document.getElementById('alerta');
+
+            function moeda(valor) {
+                return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            }
+
+            function mostrarErro(mensagem) {
+                alerta.textContent = mensagem;
+                alerta.classList.remove('d-none');
+                window.scrollTo(0, 0);
+            }
+
+            function recalcularEstimativa() {
+                var total = 0;
+                corpo.querySelectorAll('tr').forEach(function (tr) {
+                    var select = tr.querySelector('select');
+                    var preco = parseFloat(select.options[select.selectedIndex].getAttribute('data-preco')) || 0;
+                    var qtd = parseInt(tr.querySelector('input').value, 10) || 0;
+                    var subtotal = preco * qtd;
+                    tr.querySelector('.subtotal').textContent = moeda(subtotal);
+                    total += subtotal;
+                });
+                document.getElementById('total').textContent = moeda(total);
+            }
+
+            function adicionarLinha() {
+                var tr = document.createElement('tr');
+
+                var tdProduto = document.createElement('td');
+                var select = modelo.cloneNode(true);
+                select.removeAttribute('id');
+                select.classList.remove('d-none');
+                select.classList.add('form-select');
+                select.addEventListener('change', recalcularEstimativa);
+                tdProduto.appendChild(select);
+
+                var tdQtd = document.createElement('td');
+                var input = document.createElement('input');
+                input.type = 'number';
+                input.min = '1';
+                input.max = '99';
+                input.value = '1';
+                input.className = 'form-control';
+                input.addEventListener('input', recalcularEstimativa);
+                tdQtd.appendChild(input);
+
+                var tdSubtotal = document.createElement('td');
+                tdSubtotal.className = 'subtotal';
+                tdSubtotal.textContent = moeda(0);
+
+                var tdRemover = document.createElement('td');
+                var botao = document.createElement('button');
+                botao.type = 'button';
+                botao.className = 'btn btn-sm btn-outline-danger';
+                botao.innerHTML = '<i class="bi bi-trash-fill"></i>';
+                botao.addEventListener('click', function () {
+                    tr.remove();
+                    recalcularEstimativa();
+                });
+                tdRemover.appendChild(botao);
+
+                tr.appendChild(tdProduto);
+                tr.appendChild(tdQtd);
+                tr.appendChild(tdSubtotal);
+                tr.appendChild(tdRemover);
+                corpo.appendChild(tr);
+            }
+
+            document.getElementById('btn-add').addEventListener('click', adicionarLinha);
+
+            document.getElementById('btn-salvar').addEventListener('click', async function () {
+                alerta.classList.add('d-none');
+
+                var itens = [];
+                corpo.querySelectorAll('tr').forEach(function (tr) {
+                    itens.push({
+                        produtoId: tr.querySelector('select').value,
+                        quantidade: parseInt(tr.querySelector('input').value, 10)
+                    });
+                });
+
+                var requisicao = {
+                    clienteId: document.getElementById('clienteId').value,
+                    itens: itens
+                };
+
+                var csrfToken = document.querySelector('meta[name="_csrf"]').content;
+                var csrfHeader = document.querySelector('meta[name="_csrf_header"]').content;
+                var cabecalhos = { 'Content-Type': 'application/json' };
+                cabecalhos[csrfHeader] = csrfToken;
+
+                var resposta = await fetch('/api/pedidos', {
+                    method: 'POST',
+                    headers: cabecalhos,
+                    body: JSON.stringify(requisicao)
+                });
+
+                if (resposta.ok) {
+                    window.location.href = '/pedidos?criado=1';
+                    return;
+                }
+
+                var mensagem = 'Erro ao registrar o pedido.';
+                if (resposta.status === 403) {
+                    mensagem = 'Você não tem permissão para registrar pedidos.';
+                } else {
+                    try {
+                        var dados = await resposta.json();
+                        if (dados.erro) { mensagem = dados.erro; }
+                    } catch (e) { /* mantém a mensagem padrão */ }
+                }
+                mostrarErro(mensagem);
+            });
+
+            adicionarLinha();
+        })();
+    </script>
+
+</div>
+
+</body>
+</html>

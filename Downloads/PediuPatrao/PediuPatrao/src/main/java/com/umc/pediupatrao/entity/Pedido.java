@@ -1,67 +1,60 @@
 package com.umc.pediupatrao.entity;
 
-import jakarta.persistence.Entity;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 @Document(collection = "pedidos")
-@Entity
 public class Pedido {
+
     @Id
     private String id;
     private String clienteId;
-    private String tipoPizza;
-    private String status;
-    private int quantidade;
-    private String sabor;
 
-    public String getId() {
-        return id;
-    }
+    private List<ItemPedido> itens = new ArrayList<>();
 
-    public void setId(String id) {
-        this.id = id;
-    }
+    // Valores calculados SEMPRE no servidor (PedidoService)
+    private BigDecimal subtotal;
+    private BigDecimal descontoPercentual;
+    private BigDecimal valorDesconto;
+    private BigDecimal total;
 
-    public String getClienteId() {
-        return clienteId;
-    }
+    private StatusPedido status;
 
-    public void setClienteId(String clienteId) {
-        this.clienteId = clienteId;
-    }
+    // Entrada do pedido
+    private LocalDateTime dataEntrada;
+    private String responsavelEntrada;
 
-    public String getTipoPizza() {
-        return tipoPizza;
-    }
+    public String getId() { return id; }
+    public void setId(String id) { this.id = id; }
 
-    public void setTipoPizza(String tipoPizza) {
-        this.tipoPizza = tipoPizza;
-    }
+    public String getClienteId() { return clienteId; }
+    public void setClienteId(String clienteId) { this.clienteId = clienteId; }
 
-    public String getStatus() {
-        return status;
-    }
+    public List<ItemPedido> getItens() { return itens; }
+    public void setItens(List<ItemPedido> itens) { this.itens = itens; }
 
-    public void setStatus(String status) {
-        this.status = status;
-    }
+    public BigDecimal getSubtotal() { return subtotal; }
+    public void setSubtotal(BigDecimal subtotal) { this.subtotal = subtotal; }
 
-    public int getQuantidade() {
-        return quantidade;
-    }
+    public BigDecimal getDescontoPercentual() { return descontoPercentual; }
+    public void setDescontoPercentual(BigDecimal descontoPercentual) { this.descontoPercentual = descontoPercentual; }
 
-    public void setQuantidade(int quantidade) {
-        this.quantidade = quantidade;
-    }
+    public BigDecimal getValorDesconto() { return valorDesconto; }
+    public void setValorDesconto(BigDecimal valorDesconto) { this.valorDesconto = valorDesconto; }
 
-    public String getSabor() {
-        return sabor;
-    }
+    public BigDecimal getTotal() { return total; }
+    public void setTotal(BigDecimal total) { this.total = total; }
 
-    public void setSabor(String sabor) {
-        this.sabor = sabor;
-    }
-    
-    
+    public StatusPedido getStatus() { return status; }
+    public void setStatus(StatusPedido status) { this.status = status; }
+
+    public LocalDateTime getDataEntrada() { return dataEntrada; }
+    public void setDataEntrada(LocalDateTime dataEntrada) { this.dataEntrada = dataEntrada; }
+
+    public String getResponsavelEntrada() { return responsavelEntrada; }
+    public void setResponsavelEntrada(String responsavelEntrada) { this.responsavelEntrada = responsavelEntrada; }
 }

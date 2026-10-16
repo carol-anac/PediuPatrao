@@ -15,6 +15,8 @@ import com.umc.pediupatrao.service.PedidoService;
 import com.umc.pediupatrao.service.ProdutoService;
 import com.umc.pediupatrao.service.UsuarioService;
 import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -134,12 +136,31 @@ public class HomeController {
     @GetMapping("/pedidos")
     public String pedidos(Model model) {
         List<Pedido> pedidos = pedidoService.listarPedidos();
+
+        // Mapa id -> nome para mostrar o nome do cliente na lista
+        Map<String, String> nomesClientes = new HashMap<>();
+        for (Cliente c : clienteService.listarClientes()) {
+            nomesClientes.put(c.getId(), c.getNome());
+        }
+
         model.addAttribute("pedidos", pedidos);
+        model.addAttribute("nomesClientes", nomesClientes);
         model.addAttribute("content", "pedidos :: content");
         log.info("Carregando fragmento: pedidos :: content");
         return "layout";
     }
 
+    @GetMapping("/pedidos/novo")
+    public String novoPedidoForm(Model model) {
+        List<Produto> produtosAtivos = produtoService.listarProdutos().stream()
+                .filter(p -> !Boolean.FALSE.equals(p.getAtivo()) && p.getPreco() != null)
+                .toList();
+
+        model.addAttribute("clientes", clienteService.listarClientes());
+        model.addAttribute("produtos", produtosAtivos);
+        model.addAttribute("content", "pedidos/form :: content");
+        return "layout";
+    }
     // ========================
     // PRODUTOS
     // ========================

@@ -75,6 +75,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/pedidos/*/desconto", "/api/pedidos/*/cancelar").hasRole(GERENTE)
 
                         // Pedidos
+                                                // Pedidos
+                        .requestMatchers("/pedidos/novo").hasAnyRole(GERENTE, ATENDENTE)
                         .requestMatchers(HttpMethod.GET, "/pedidos", "/api/pedidos", "/api/pedidos/**")
                                 .hasAnyRole(ADMIN, GERENTE, ATENDENTE)
                         .requestMatchers(HttpMethod.POST, "/api/pedidos").hasAnyRole(GERENTE, ATENDENTE)
