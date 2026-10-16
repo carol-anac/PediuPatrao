@@ -22,8 +22,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
-@Service
-public class PedidoService {
+    @Service
+    public class PedidoService {
 
     private static final int MAX_LINHAS = 50;
     private static final int MAX_QUANTIDADE = 99;
