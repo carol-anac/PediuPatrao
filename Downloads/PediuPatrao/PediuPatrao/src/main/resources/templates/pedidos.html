@@ -49,12 +49,14 @@
                         <th>Status</th>
                         <th>Entrada</th>
                         <th>Responsável</th>
+                        <th>Saída</th>
+                        <th class="text-end pe-4">Ações</th>
                     </tr>
                 </thead>
                 <tbody>
                     <!-- Lista vazia -->
                     <tr th:if="${#lists.isEmpty(pedidos)}">
-                        <td colspan="8" class="text-center text-muted py-5">
+                        <td colspan="10" class="text-center text-muted py-5">
                             <i class="bi bi-inbox fs-3 d-block mb-2"></i>
                             Nenhum pedido encontrado.
                         </td>
@@ -84,6 +86,35 @@
                         </td>
                         <td th:text="${#temporals.format(pedido.dataEntrada, 'dd/MM/yyyy HH:mm')}"></td>
                         <td th:text="${pedido.responsavelEntrada}"></td>
+                        <td>
+                            <span th:if="${pedido.dataSaida != null}"
+                                  th:text="${#temporals.format(pedido.dataSaida, 'dd/MM HH:mm')} + ' (' + ${pedido.responsavelSaida} + ')'"></span>
+                            <span th:if="${st == 'CANCELADO'}" class="text-danger small"
+                                  th:title="${pedido.justificativaCancelamento}"
+                                  th:text="'Cancelado por ' + ${pedido.responsavelCancelamento}"></span>
+                        </td>
+                        <td class="text-end pe-4 text-nowrap">
+                            <!-- RF03: próximos status (GERENTE e ATENDENTE) -->
+                            <th:block th:if="${pedido.status != null}">
+                                <button type="button" class="btn btn-sm btn-outline-primary me-1"
+                                        sec:authorize="hasAnyRole('GERENTE','ATENDENTE')"
+                                        th:each="prox : ${pedido.status.proximos()}"
+                                        th:data-id="${pedido.id}" th:data-status="${prox.name()}"
+                                        th:text="${prox.name()}"
+                                        onclick="mudarStatus(this)"></button>
+                                <!-- RF04: desconto e cancelamento (somente GERENTE, antes da saída) -->
+                                <th:block th:if="${pedido.status.antesDaSaida()}">
+                                    <button type="button" class="btn btn-sm btn-outline-success me-1"
+                                            sec:authorize="hasRole('GERENTE')"
+                                            th:data-id="${pedido.id}"
+                                            onclick="aplicarDesconto(this)">Desconto</button>
+                                    <button type="button" class="btn btn-sm btn-outline-danger"
+                                            sec:authorize="hasRole('GERENTE')"
+                                            th:data-id="${pedido.id}"
+                                            onclick="cancelarPedido(this)">Cancelar</button>
+                                </th:block>
+                            </th:block>
+                        </td>
                     </tr>
                 </tbody>
             </table>
@@ -94,6 +125,53 @@
     </div>
 
 </div>
+
+<script>
+    function csrfHeaders() {
+        const token = document.querySelector('meta[name="_csrf"]');
+        const header = document.querySelector('meta[name="_csrf_header"]');
+        const h = { 'Content-Type': 'application/json' };
+        if (token && header) { h[header.content] = token.content; }
+        return h;
+    }
+
+    async function enviar(url, metodo, corpo) {
+        try {
+            const r = await fetch(url, {
+                method: metodo,
+                headers: csrfHeaders(),
+                body: corpo ? JSON.stringify(corpo) : undefined
+            });
+            if (r.ok) { location.reload(); return; }
+            if (r.status === 403) { alert('Acesso negado: seu perfil não pode realizar esta operação.'); return; }
+            let msg = 'Erro ' + r.status;
+            try { const d = await r.json(); if (d.erro) msg = d.erro; } catch (e) { }
+            alert(msg);
+        } catch (e) {
+            alert('Falha de comunicação com o servidor.');
+        }
+    }
+
+    function mudarStatus(btn) {
+        const id = btn.dataset.id, status = btn.dataset.status;
+        if (!confirm('Mudar o pedido para ' + status + '?')) return;
+        enviar('/api/pedidos/' + encodeURIComponent(id) + '/status?status=' + encodeURIComponent(status), 'PUT');
+    }
+
+    function aplicarDesconto(btn) {
+        const valor = prompt('Percentual de desconto (0 a 20):');
+        if (valor === null) return;
+        const percentual = Number(valor.replace(',', '.'));
+        if (valor.trim() === '' || isNaN(percentual)) { alert('Informe um número válido.'); return; }
+        enviar('/api/pedidos/' + encodeURIComponent(btn.dataset.id) + '/desconto', 'PUT', { percentual: percentual });
+    }
+
+    function cancelarPedido(btn) {
+        const justificativa = prompt('Justificativa do cancelamento (obrigatória):');
+        if (justificativa === null) return;
+        enviar('/api/pedidos/' + encodeURIComponent(btn.dataset.id) + '/cancelar', 'POST', { justificativa: justificativa });
+    }
+</script>
 
 </body>
 </html>

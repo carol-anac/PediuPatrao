@@ -22,12 +22,13 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
-    @Service
-    public class PedidoService {
+@Service
+public class PedidoService {
 
     private static final int MAX_LINHAS = 50;
     private static final int MAX_QUANTIDADE = 99;
     private static final BigDecimal CEM = BigDecimal.valueOf(100);
+    private static final BigDecimal DESCONTO_MAXIMO = BigDecimal.valueOf(20);
 
     private final PedidoRepository pedidoRepository;
     private final ClienteRepository clienteRepository;
@@ -129,13 +130,14 @@ import org.springframework.stereotype.Service;
     }
 
     /**
-     * Provisório (RF02): as transições válidas e os registros de saída serão feitos no RF03,
-     * e o cancelamento terá operação própria, exclusiva do GERENTE (RF04).
+     * RF03: avança o pedido para o próximo estado permitido.
+     * Qualquer transição fora do fluxo (inclusive saltos, retrocessos e qualquer
+     * mudança a partir de FINALIZADO/CANCELADO) é recusada.
+     * O cancelamento tem operação própria e exclusiva do GERENTE (RF04).
      */
     @PreAuthorize("hasAnyRole('GERENTE','ATENDENTE')")
     public Pedido atualizarStatus(String id, String status) {
-        Pedido pedido = pedidoRepository.findById(id)
-                .orElseThrow(() -> new RegraNegocioException("Pedido não encontrado."));
+        Pedido pedido = buscarOuFalhar(id);
 
         StatusPedido novoStatus;
         try {
@@ -147,13 +149,77 @@ import org.springframework.stereotype.Service;
             throw new RegraNegocioException("O cancelamento é uma operação própria, exclusiva do GERENTE.");
         }
 
+        StatusPedido atual = pedido.getStatus();
+        if (atual == null || !atual.podeIrPara(novoStatus)) {
+            throw new RegraNegocioException("Transição não permitida: " + atual + " -> " + novoStatus + ".");
+        }
+
         pedido.setStatus(novoStatus);
+        if (novoStatus.ehSaida()) {
+            // Registro obrigatório de saída: quem liberou o pedido e quando
+            pedido.setDataSaida(LocalDateTime.now());
+            pedido.setResponsavelSaida(usuarioLogado());
+        }
         return pedidoRepository.save(pedido);
+    }
+
+    /**
+     * RF04: aplica desconto percentual (0 a 20%). Exclusivo do GERENTE, só antes da saída.
+     * O desconto substitui o anterior (não acumula) e o total é recalculado no servidor.
+     */
+    @PreAuthorize("hasRole('GERENTE')")
+    public Pedido aplicarDesconto(String id, BigDecimal percentual) {
+        Pedido pedido = buscarOuFalhar(id);
+
+        if (percentual == null) {
+            throw new RegraNegocioException("Percentual de desconto não informado.");
+        }
+        if (percentual.signum() < 0 || percentual.compareTo(DESCONTO_MAXIMO) > 0) {
+            throw new RegraNegocioException("O desconto deve estar entre 0% e " + DESCONTO_MAXIMO.intValue() + "%.");
+        }
+        if (pedido.getStatus() == null || !pedido.getStatus().antesDaSaida()) {
+            throw new RegraNegocioException(
+                    "Desconto só pode ser aplicado antes da saída do pedido (status atual: " + pedido.getStatus() + ").");
+        }
+
+        pedido.setDescontoPercentual(percentual.setScale(2, RoundingMode.HALF_UP));
+        recalcularTotais(pedido);
+        return pedidoRepository.save(pedido);
+    }
+
+    /**
+     * RF04: cancela o pedido com justificativa obrigatória. Exclusivo do GERENTE
+     * (inclusive negado ao ADMIN), só antes da saída. Pedido cancelado fica bloqueado.
+     */
+    @PreAuthorize("hasRole('GERENTE')")
+    public Pedido cancelarPedido(String id, String justificativa) {
+        Pedido pedido = buscarOuFalhar(id);
+
+        String texto = justificativa == null ? "" : justificativa.trim();
+        if (texto.length() < 5 || texto.length() > 300) {
+            throw new RegraNegocioException("Informe uma justificativa de 5 a 300 caracteres.");
+        }
+        if (pedido.getStatus() == null || !pedido.getStatus().antesDaSaida()) {
+            throw new RegraNegocioException(
+                    "Pedido não pode ser cancelado após a saída ou se já estiver finalizado/cancelado (status atual: "
+                            + pedido.getStatus() + ").");
+        }
+
+        pedido.setStatus(StatusPedido.CANCELADO);
+        pedido.setDataCancelamento(LocalDateTime.now());
+        pedido.setResponsavelCancelamento(usuarioLogado());
+        pedido.setJustificativaCancelamento(texto);
+        return pedidoRepository.save(pedido);
+    }
+
+    private Pedido buscarOuFalhar(String id) {
+        return pedidoRepository.findById(id)
+                .orElseThrow(() -> new RegraNegocioException("Pedido não encontrado."));
     }
 
     // ---------- cálculo e utilitários ----------
 
-    /** Recalcula subtotal, desconto e total a partir dos itens. O RF04 reutilizará este método. */
+    /** Recalcula subtotal, desconto e total a partir dos itens. */
     private void recalcularTotais(Pedido pedido) {
         BigDecimal subtotal = BigDecimal.ZERO;
         for (ItemPedido item : pedido.getItens()) {

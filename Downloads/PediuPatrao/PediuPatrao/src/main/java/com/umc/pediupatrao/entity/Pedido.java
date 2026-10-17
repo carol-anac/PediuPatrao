@@ -28,6 +28,15 @@ public class Pedido {
     private LocalDateTime dataEntrada;
     private String responsavelEntrada;
 
+    // Saída do pedido (entrega ou retirada) - RF03
+    private LocalDateTime dataSaida;
+    private String responsavelSaida;
+
+    // Cancelamento - RF04
+    private LocalDateTime dataCancelamento;
+    private String responsavelCancelamento;
+    private String justificativaCancelamento;
+
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
 
@@ -57,4 +66,19 @@ public class Pedido {
 
     public String getResponsavelEntrada() { return responsavelEntrada; }
     public void setResponsavelEntrada(String responsavelEntrada) { this.responsavelEntrada = responsavelEntrada; }
+
+    public LocalDateTime getDataSaida() { return dataSaida; }
+    public void setDataSaida(LocalDateTime dataSaida) { this.dataSaida = dataSaida; }
+
+    public String getResponsavelSaida() { return responsavelSaida; }
+    public void setResponsavelSaida(String responsavelSaida) { this.responsavelSaida = responsavelSaida; }
+
+    public LocalDateTime getDataCancelamento() { return dataCancelamento; }
+    public void setDataCancelamento(LocalDateTime dataCancelamento) { this.dataCancelamento = dataCancelamento; }
+
+    public String getResponsavelCancelamento() { return responsavelCancelamento; }
+    public void setResponsavelCancelamento(String responsavelCancelamento) { this.responsavelCancelamento = responsavelCancelamento; }
+
+    public String getJustificativaCancelamento() { return justificativaCancelamento; }
+    public void setJustificativaCancelamento(String justificativaCancelamento) { this.justificativaCancelamento = justificativaCancelamento; }
 }

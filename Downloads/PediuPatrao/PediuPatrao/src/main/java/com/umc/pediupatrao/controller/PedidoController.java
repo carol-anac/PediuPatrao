@@ -1,5 +1,7 @@
 package com.umc.pediupatrao.controller;
 
+import com.umc.pediupatrao.dto.CancelamentoRequest;
+import com.umc.pediupatrao.dto.DescontoRequest;
 import com.umc.pediupatrao.dto.PedidoRequest;
 import com.umc.pediupatrao.entity.Pedido;
 import com.umc.pediupatrao.service.PedidoService;
@@ -39,5 +41,17 @@ public class PedidoController {
     @PutMapping("/{id}/status")
     public Pedido atualizarStatus(@PathVariable String id, @RequestParam String status) {
         return pedidoService.atualizarStatus(id, status);
+    }
+
+    // RF04 - exclusivo do GERENTE (regra de rota no SecurityConfig + @PreAuthorize no serviço)
+    @PutMapping("/{id}/desconto")
+    public Pedido aplicarDesconto(@PathVariable String id, @RequestBody DescontoRequest requisicao) {
+        return pedidoService.aplicarDesconto(id, requisicao == null ? null : requisicao.percentual());
+    }
+
+    // RF04 - exclusivo do GERENTE
+    @PostMapping("/{id}/cancelar")
+    public Pedido cancelarPedido(@PathVariable String id, @RequestBody CancelamentoRequest requisicao) {
+        return pedidoService.cancelarPedido(id, requisicao == null ? null : requisicao.justificativa());
     }
 }
