@@ -17,7 +17,6 @@ Sistema de pedidos para lanchonete/pizzaria desenvolvido com Java 21, Spring Boo
 
 Entre com um usuário ADMIN ou GERENTE e acesse `http://localhost:8080/dashboard`. A página consome os endpoints `/api/dashboard/**` e filtra os indicadores por data.
 
-Os requisitos, parâmetros, exemplos JSON, erros e roteiro de demonstração estão em [docs/dashboard-administrativo.md](docs/dashboard-administrativo.md).
 
 ## Testes
 
