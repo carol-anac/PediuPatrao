@@ -106,22 +106,23 @@ O ranking soma a quantidade e o subtotal de cada item em pedidos não cancelados
 
 ## Erros possíveis
 
-- `400 Bad Request`: data inválida ou número fora do formato retorna `{ "erro": "Parâmetro inválido: nome." }`. Período invertido ou acima de 366 dias, agrupamento diferente de `dia`/`mes` e limite fora de 1 a 20 retornam `{ "erro": "mensagem" }`.
+- `400 Bad Request`: parâmetro de data ou número em formato inválido retorna `{ "erro": "Parâmetro inválido: nome." }`. Por exemplo, `GET /api/dashboard/resumo?inicio=nao-e-data` retorna `{ "erro": "Parâmetro inválido: inicio." }`.
+- `400 Bad Request`: regras de negócio inválidas retornam uma mensagem no campo `erro`. Período invertido retorna `{ "erro": "A data inicial deve ser anterior ou igual à data final." }`; período acima de 366 dias retorna `{ "erro": "O período consultado não pode ultrapassar 366 dias." }`. Agrupamento diferente de `dia`/`mes` e limite fora de 1 a 20 também retornam `400` com a mensagem da validação.
 - `401 Unauthorized`: a API foi chamada sem autenticação.
 - `403 Forbidden`: o usuário autenticado não tem perfil ADMIN ou GERENTE.
 - `5xx`: falha inesperada durante a consulta, inclusive indisponibilidade do MongoDB.
 
 ## Evidências de validação
 
-A captura abaixo foi fornecida após a execução local. Ela mostra o dashboard carregado no período de 04/10/2026 a 10/11/2026, com indicadores, gráficos e ranking: R$ 951,20 em vendas, 9 pedidos considerados, ticket médio de R$ 105,69 e 7 pedidos em andamento.
+O dashboard foi executado no período de 04/10/2026 a 10/11/2026, com indicadores, gráficos e ranking: R$ 951,20 em vendas, 9 pedidos considerados, ticket médio de R$ 105,69 e 7 pedidos em andamento.
 
-![Dashboard administrativo executado com dados](evidencias/dashboard-validacao.png)
+![Evidência do dashboard administrativo executado com dados](evidencias/dashboard-validacao.png)
 
 Validações realizadas no código:
 
 - `mvnw.cmd test-compile` concluiu com `BUILD SUCCESS`, compilando a aplicação e o código dos testes unitários.
 - `node --check src/main/resources/static/js/dashboard.js` passou sem erro de sintaxe.
-- A execução de `mvnw.cmd test` não foi concluída neste ambiente: o Maven não conseguiu resolver `surefire-junit-platform` no Maven Central por falha de DNS. Portanto, não há resultado de execução dos testes unitários para registrar aqui.
+- A execução de `mvnw.cmd test` iniciou `DashboardServiceTest`, mas não terminou neste ambiente: o processo ficou parado após a mensagem de autoanexação do Mockito. Não foi gerado relatório, então não há resultado de aprovação dos testes unitários a registrar.
 
-Antes da entrega, execute `mvnw.cmd test` na máquina com acesso ao Maven Central e anexe a saída do comando, além de capturas das respostas dos endpoints que você demonstrar.
+Para completar as evidências, anexe uma captura da resposta real de pelo menos um endpoint, por exemplo `GET /api/dashboard/resumo?inicio=2026-11-01&fim=2026-11-10`, e a saída de `mvnw.cmd test` quando a execução terminar.
 
