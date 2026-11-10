@@ -106,17 +106,21 @@
                         <td class="text-end pe-4 text-nowrap">
                             <!-- RF03: próximos status (GERENTE e ATENDENTE) -->
                             <th:block th:if="${pedido.status != null}">
-                                <button type="button" class="btn btn-sm btn-outline-primary me-1"
-                                        sec:authorize="hasAnyRole('GERENTE','ATENDENTE')"
-                                        th:each="prox : ${pedido.status.proximos()}"
-                                        th:data-id="${pedido.id}" th:data-status="${prox.name()}"
-                                        th:with="acao=${prox.name() == 'EM_PREPARACAO' ? 'Iniciar preparo' :
-                                                       (prox.name() == 'PRONTO' ? 'Marcar como pronto' :
-                                                       (prox.name() == 'SAIU_PARA_ENTREGA' ? 'Enviar para entrega' :
-                                                       (prox.name() == 'RETIRADO' ? 'Registrar retirada' :
-                                                       (prox.name() == 'FINALIZADO' ? 'Finalizar pedido' : prox.name()))))}"
-                                        th:data-acao="${acao}" th:text="${acao}"
-                                        onclick="mudarStatus(this)"></button>
+                                <form class="d-inline" method="post"
+                                      sec:authorize="hasAnyRole('GERENTE','ATENDENTE')"
+                                      th:each="prox : ${pedido.status.proximos()}"
+                                      th:action="@{/pedidos/{id}/status(id=${pedido.id})}"
+                                      onsubmit="return confirm('Confirmar esta ação para o pedido?');">
+                                    <input type="hidden" name="status" th:value="${prox.name()}" />
+                                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                                    <button type="submit" class="btn btn-sm btn-outline-primary me-1"
+                                            th:with="acao=${prox.name() == 'EM_PREPARACAO' ? 'Iniciar preparo' :
+                                                           (prox.name() == 'PRONTO' ? 'Marcar como pronto' :
+                                                           (prox.name() == 'SAIU_PARA_ENTREGA' ? 'Enviar para entrega' :
+                                                           (prox.name() == 'RETIRADO' ? 'Registrar retirada' :
+                                                           (prox.name() == 'FINALIZADO' ? 'Finalizar pedido' : prox.name()))))}"
+                                            th:text="${acao}"></button>
+                                </form>
                                 <!-- RF04: desconto e cancelamento (somente GERENTE, antes da saída) -->
                                 <th:block th:if="${pedido.status.antesDaSaida()}">
                                     <button type="button" class="btn btn-sm btn-outline-success me-1"
@@ -165,13 +169,6 @@
         } catch (e) {
             alert('Falha de comunicação com o servidor.');
         }
-    }
-
-    function mudarStatus(btn) {
-        const id = btn.dataset.id, status = btn.dataset.status;
-        const acao = btn.dataset.acao || status;
-        if (!confirm('Confirmar ação: ' + acao + '?')) return;
-        enviar('/api/pedidos/' + encodeURIComponent(id) + '/status?status=' + encodeURIComponent(status), 'PUT');
     }
 
     function aplicarDesconto(btn) {
