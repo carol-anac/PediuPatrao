@@ -104,4 +104,24 @@ Resposta `200`:
 
 O ranking soma a quantidade e o subtotal de cada item em pedidos não cancelados. O subtotal é bruto e não distribui o desconto do pedido pelos produtos.
 
+## Erros possíveis
+
+- `400 Bad Request`: data inválida ou número fora do formato retorna `{ "erro": "Parâmetro inválido: nome." }`. Período invertido ou acima de 366 dias, agrupamento diferente de `dia`/`mes` e limite fora de 1 a 20 retornam `{ "erro": "mensagem" }`.
+- `401 Unauthorized`: a API foi chamada sem autenticação.
+- `403 Forbidden`: o usuário autenticado não tem perfil ADMIN ou GERENTE.
+- `5xx`: falha inesperada durante a consulta, inclusive indisponibilidade do MongoDB.
+
+## Evidências de validação
+
+A captura abaixo foi fornecida após a execução local. Ela mostra o dashboard carregado no período de 04/10/2026 a 10/11/2026, com indicadores, gráficos e ranking: R$ 951,20 em vendas, 9 pedidos considerados, ticket médio de R$ 105,69 e 7 pedidos em andamento.
+
+![Dashboard administrativo executado com dados](evidencias/dashboard-validacao.png)
+
+Validações realizadas no código:
+
+- `mvnw.cmd test-compile` concluiu com `BUILD SUCCESS`, compilando a aplicação e o código dos testes unitários.
+- `node --check src/main/resources/static/js/dashboard.js` passou sem erro de sintaxe.
+- A execução de `mvnw.cmd test` não foi concluída neste ambiente: o Maven não conseguiu resolver `surefire-junit-platform` no Maven Central por falha de DNS. Portanto, não há resultado de execução dos testes unitários para registrar aqui.
+
+Antes da entrega, execute `mvnw.cmd test` na máquina com acesso ao Maven Central e anexe a saída do comando, além de capturas das respostas dos endpoints que você demonstrar.
 
