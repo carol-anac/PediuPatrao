@@ -18,6 +18,10 @@
         </a>
     </div>
 
+    <div class="alert alert-info py-2 small" role="note">
+        <strong>Fluxo do pedido:</strong> use a ação disponível para avançar uma etapa. O GERENTE também pode aplicar desconto ou cancelar antes da saída.
+    </div>
+
     <!-- Mensagens de feedback -->
     <div class="alert alert-success alert-dismissible fade show" th:if="${param.criado}" role="alert">
         <i class="bi bi-check-circle-fill me-2"></i>
@@ -81,7 +85,13 @@
                                                   (${st == 'EM_PREPARACAO'} ? 'bg-warning text-dark' :
                                                   (${st == 'PRONTO'} ? 'bg-info text-dark' :
                                                   (${st == 'SAIU_PARA_ENTREGA' or st == 'RETIRADO'} ? 'bg-primary' : 'bg-secondary'))))"
-                                  th:text="${st}">
+                                  th:text="${st == 'RECEBIDO' ? 'Recebido' :
+                                             (st == 'EM_PREPARACAO' ? 'Em preparação' :
+                                             (st == 'PRONTO' ? 'Pronto' :
+                                             (st == 'SAIU_PARA_ENTREGA' ? 'Saiu para entrega' :
+                                             (st == 'RETIRADO' ? 'Retirado' :
+                                             (st == 'FINALIZADO' ? 'Finalizado' :
+                                             (st == 'CANCELADO' ? 'Cancelado' : st))))))}">
                             </span>
                         </td>
                         <td th:text="${#temporals.format(pedido.dataEntrada, 'dd/MM/yyyy HH:mm')}"></td>
@@ -100,7 +110,12 @@
                                         sec:authorize="hasAnyRole('GERENTE','ATENDENTE')"
                                         th:each="prox : ${pedido.status.proximos()}"
                                         th:data-id="${pedido.id}" th:data-status="${prox.name()}"
-                                        th:text="${prox.name()}"
+                                        th:with="acao=${prox.name() == 'EM_PREPARACAO' ? 'Iniciar preparo' :
+                                                       (prox.name() == 'PRONTO' ? 'Marcar como pronto' :
+                                                       (prox.name() == 'SAIU_PARA_ENTREGA' ? 'Enviar para entrega' :
+                                                       (prox.name() == 'RETIRADO' ? 'Registrar retirada' :
+                                                       (prox.name() == 'FINALIZADO' ? 'Finalizar pedido' : prox.name()))))}"
+                                        th:data-acao="${acao}" th:text="${acao}"
                                         onclick="mudarStatus(this)"></button>
                                 <!-- RF04: desconto e cancelamento (somente GERENTE, antes da saída) -->
                                 <th:block th:if="${pedido.status.antesDaSaida()}">
@@ -154,7 +169,8 @@
 
     function mudarStatus(btn) {
         const id = btn.dataset.id, status = btn.dataset.status;
-        if (!confirm('Mudar o pedido para ' + status + '?')) return;
+        const acao = btn.dataset.acao || status;
+        if (!confirm('Confirmar ação: ' + acao + '?')) return;
         enviar('/api/pedidos/' + encodeURIComponent(id) + '/status?status=' + encodeURIComponent(status), 'PUT');
     }
 
