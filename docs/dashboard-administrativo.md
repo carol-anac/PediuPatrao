@@ -104,32 +104,4 @@ Resposta `200`:
 
 O ranking soma a quantidade e o subtotal de cada item em pedidos não cancelados. O subtotal é bruto e não distribui o desconto do pedido pelos produtos.
 
-## Erros e tratamento
 
-- `400 Bad Request`: formato de data ou número inválido retorna `{ "erro": "Parâmetro inválido: nome." }`; início posterior ao fim, intervalo acima de 366 dias, agrupamento diferente de `dia`/`mes` ou limite fora de 1 a 20 retorna `{ "erro": "mensagem" }`.
-- `401 Unauthorized`: chamada da API sem autenticação.
-- `403 Forbidden`: usuário sem perfil ADMIN ou GERENTE.
-- `5xx`: indisponibilidade do MongoDB ou falha não prevista; a tela informa que não conseguiu atualizar e pode ser recarregada após restabelecer o serviço.
-
-## Execução local
-
-1. Inicie um MongoDB local em `mongodb://localhost:27017/pediupatrao` ou configure `MONGODB_URI`.
-2. Na raiz do projeto, execute `mvnw.cmd spring-boot:run` (Windows) ou `./mvnw spring-boot:run`.
-3. Acesse `http://localhost:8080/login` e entre com um usuário de perfil ADMIN ou GERENTE cadastrado no sistema.
-4. Abra **Dashboard** no menu lateral. Se não houver pedidos no período, ajuste as datas ou cadastre pedidos para demonstrar os indicadores.
-
-## Evidências de validação
-
-- A compilação principal com Maven concluiu com `BUILD SUCCESS` após a integração do código.
-- O JavaScript do dashboard passou por `node --check` sem apontar erro de sintaxe.
-- Os testes unitários em `src/test/java/com/umc/pediupatrao/service/DashboardServiceTest.java` cobrem resumo com cancelados, série diária com datas vazias, ranking agrupado, contagem de status e validações do período/agrupamento.
-- A execução do Surefire ainda depende da resolução do artefato `surefire-junit-platform` pelo Maven Central. Na validação deste ambiente, o DNS de `repo.maven.apache.org` falhou; por isso os testes foram compilados, mas não puderam ser executados aqui.
-- O MongoDB não estava ativo em `localhost:27017` durante a validação, portanto a integração HTTP com banco e a captura da tela devem ser realizadas localmente antes da entrega. Registrar abaixo o perfil usado, o período testado e capturas/resultados reais, sem preencher resultados presumidos.
-
-## Roteiro de vídeo (até 3 minutos)
-
-1. Entrar como ADMIN ou GERENTE e abrir o dashboard.
-2. Mostrar os quatro indicadores e explicar que pedidos cancelados são excluídos das vendas.
-3. Mostrar o gráfico de vendas, os status e o ranking de produtos.
-4. Alterar o intervalo e aplicar o filtro.
-5. Abrir as chamadas `/api/dashboard/...` no navegador ou em uma ferramenta REST e mostrar um JSON de resposta.
