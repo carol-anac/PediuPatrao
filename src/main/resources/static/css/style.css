@@ -63,3 +63,8 @@ body {
         cursor: pointer;
     }
 }
+.pedido-acao-detalhe { display: inline-block; position: relative; vertical-align: middle; }
+.pedido-acao-detalhe > summary { cursor: pointer; list-style: none; }
+.pedido-acao-detalhe > summary::-webkit-details-marker { display: none; }
+.pedido-acao-detalhe[open] { z-index: 20; }
+.pedido-acao-form { background: #fff; border: 1px solid #dee2e6; border-radius: .5rem; box-shadow: 0 .5rem 1.25rem rgba(20, 30, 45, .15); min-width: 230px; padding: .75rem; position: absolute; right: 0; text-align: left; top: calc(100% + .3rem); white-space: normal; }

@@ -123,14 +123,30 @@
                                 </form>
                                 <!-- RF04: desconto e cancelamento (somente GERENTE, antes da saída) -->
                                 <th:block th:if="${pedido.status.antesDaSaida()}">
-                                    <button type="button" class="btn btn-sm btn-outline-success me-1"
-                                            sec:authorize="hasRole('GERENTE')"
-                                            th:data-id="${pedido.id}"
-                                            onclick="aplicarDesconto(this)">Desconto</button>
-                                    <button type="button" class="btn btn-sm btn-outline-danger"
-                                            sec:authorize="hasRole('GERENTE')"
-                                            th:data-id="${pedido.id}"
-                                            onclick="cancelarPedido(this)">Cancelar</button>
+                                    <details class="pedido-acao-detalhe me-1" sec:authorize="hasRole('GERENTE')">
+                                        <summary class="btn btn-sm btn-outline-success">Desconto</summary>
+                                        <form class="pedido-acao-form" method="post"
+                                              th:action="@{/pedidos/{id}/desconto(id=${pedido.id})}">
+                                            <label class="form-label small mb-1" th:for="|desconto-${pedido.id}|">Percentual (0 a 20%)</label>
+                                            <input class="form-control form-control-sm mb-2" type="number" name="percentual"
+                                                   min="0" max="20" step="0.01" required="required"
+                                                   th:id="|desconto-${pedido.id}|" />
+                                            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                                            <button type="submit" class="btn btn-sm btn-success w-100">Aplicar desconto</button>
+                                        </form>
+                                    </details>
+                                    <details class="pedido-acao-detalhe" sec:authorize="hasRole('GERENTE')">
+                                        <summary class="btn btn-sm btn-outline-danger">Cancelar</summary>
+                                        <form class="pedido-acao-form" method="post"
+                                              th:action="@{/pedidos/{id}/cancelar(id=${pedido.id})}">
+                                            <label class="form-label small mb-1" th:for="|justificativa-${pedido.id}|">Justificativa (5 a 300 caracteres)</label>
+                                            <textarea class="form-control form-control-sm mb-2" name="justificativa"
+                                                      minlength="5" maxlength="300" rows="3" required="required"
+                                                      th:id="|justificativa-${pedido.id}|"></textarea>
+                                            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                                            <button type="submit" class="btn btn-sm btn-danger w-100">Confirmar cancelamento</button>
+                                        </form>
+                                    </details>
                                 </th:block>
                             </th:block>
                         </td>
@@ -144,47 +160,6 @@
     </div>
 
 </div>
-
-<script>
-    function csrfHeaders() {
-        const token = document.querySelector('meta[name="_csrf"]');
-        const header = document.querySelector('meta[name="_csrf_header"]');
-        const h = { 'Content-Type': 'application/json' };
-        if (token && header) { h[header.content] = token.content; }
-        return h;
-    }
-
-    async function enviar(url, metodo, corpo) {
-        try {
-            const r = await fetch(url, {
-                method: metodo,
-                headers: csrfHeaders(),
-                body: corpo ? JSON.stringify(corpo) : undefined
-            });
-            if (r.ok) { location.reload(); return; }
-            if (r.status === 403) { alert('Acesso negado: seu perfil não pode realizar esta operação.'); return; }
-            let msg = 'Erro ' + r.status;
-            try { const d = await r.json(); if (d.erro) msg = d.erro; } catch (e) { }
-            alert(msg);
-        } catch (e) {
-            alert('Falha de comunicação com o servidor.');
-        }
-    }
-
-    function aplicarDesconto(btn) {
-        const valor = prompt('Percentual de desconto (0 a 20):');
-        if (valor === null) return;
-        const percentual = Number(valor.replace(',', '.'));
-        if (valor.trim() === '' || isNaN(percentual)) { alert('Informe um número válido.'); return; }
-        enviar('/api/pedidos/' + encodeURIComponent(btn.dataset.id) + '/desconto', 'PUT', { percentual: percentual });
-    }
-
-    function cancelarPedido(btn) {
-        const justificativa = prompt('Justificativa do cancelamento (obrigatória):');
-        if (justificativa === null) return;
-        enviar('/api/pedidos/' + encodeURIComponent(btn.dataset.id) + '/cancelar', 'POST', { justificativa: justificativa });
-    }
-</script>
 
 </body>
 </html>

@@ -17,6 +17,7 @@ import com.umc.pediupatrao.service.UsuarioService;
 import java.util.List;
 import java.util.HashMap;
 import java.util.Map;
+import java.math.BigDecimal;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -163,6 +164,32 @@ public class HomeController {
         try {
             pedidoService.atualizarStatus(id, status);
             redirectAttributes.addFlashAttribute("sucesso", "Etapa do pedido atualizada com sucesso.");
+        } catch (RegraNegocioException ex) {
+            redirectAttributes.addFlashAttribute("erro", ex.getMessage());
+        }
+        return "redirect:/pedidos";
+    }
+
+    @PostMapping("/pedidos/{id}/desconto")
+    public String aplicarDescontoPedido(@PathVariable String id, @RequestParam String percentual,
+            RedirectAttributes redirectAttributes) {
+        try {
+            BigDecimal valor = new BigDecimal(percentual.trim().replace(',', '.'));
+            pedidoService.aplicarDesconto(id, valor);
+            redirectAttributes.addFlashAttribute("sucesso", "Desconto aplicado ao pedido.");
+        } catch (NumberFormatException | RegraNegocioException ex) {
+            redirectAttributes.addFlashAttribute("erro", ex instanceof RegraNegocioException
+                    ? ex.getMessage() : "Informe um percentual numérico válido.");
+        }
+        return "redirect:/pedidos";
+    }
+
+    @PostMapping("/pedidos/{id}/cancelar")
+    public String cancelarPedido(@PathVariable String id, @RequestParam String justificativa,
+            RedirectAttributes redirectAttributes) {
+        try {
+            pedidoService.cancelarPedido(id, justificativa);
+            redirectAttributes.addFlashAttribute("sucesso", "Pedido cancelado.");
         } catch (RegraNegocioException ex) {
             redirectAttributes.addFlashAttribute("erro", ex.getMessage());
         }
