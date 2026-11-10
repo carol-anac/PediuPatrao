@@ -116,13 +116,8 @@ O ranking soma a quantidade e o subtotal de cada item em pedidos não cancelados
 
 O dashboard foi executado no período de 04/10/2026 a 10/11/2026, com indicadores, gráficos e ranking: R$ 951,20 em vendas, 9 pedidos considerados, ticket médio de R$ 105,69 e 7 pedidos em andamento.
 
-![Evidência do dashboard administrativo executado com dados](evidencias/dashboard-validacao.png)
-
 Validações realizadas no código:
 
 - `mvnw.cmd test-compile` concluiu com `BUILD SUCCESS`, compilando a aplicação e o código dos testes unitários.
 - `node --check src/main/resources/static/js/dashboard.js` passou sem erro de sintaxe.
 - A execução de `mvnw.cmd test` iniciou `DashboardServiceTest`, mas não terminou neste ambiente: o processo ficou parado após a mensagem de autoanexação do Mockito. Não foi gerado relatório, então não há resultado de aprovação dos testes unitários a registrar.
-
-Para completar as evidências, anexe uma captura da resposta real de pelo menos um endpoint, por exemplo `GET /api/dashboard/resumo?inicio=2026-11-01&fim=2026-11-10`, e a saída de `mvnw.cmd test` quando a execução terminar.
-
