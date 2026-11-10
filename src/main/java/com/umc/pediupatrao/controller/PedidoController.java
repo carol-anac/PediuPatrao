@@ -1,21 +1,29 @@
 package com.umc.pediupatrao.controller;
 
+import com.umc.pediupatrao.dto.CancelamentoRequest;
+import com.umc.pediupatrao.dto.DescontoRequest;
+import com.umc.pediupatrao.dto.PedidoRequest;
 import com.umc.pediupatrao.entity.Pedido;
 import com.umc.pediupatrao.service.PedidoService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
 import java.util.List;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/pedidos")
 public class PedidoController {
 
-    @Autowired
-    private PedidoService pedidoService;
+    private final PedidoService pedidoService;
+
+    public PedidoController(PedidoService pedidoService) {
+        this.pedidoService = pedidoService;
+    }
 
     @PostMapping
-    public Pedido criarPedido(@RequestBody Pedido pedido) {
-        return pedidoService.criarPedido(pedido);
+    public ResponseEntity<Pedido> criarPedido(@RequestBody PedidoRequest requisicao) {
+        Pedido criado = pedidoService.criarPedido(requisicao);
+        return ResponseEntity.status(HttpStatus.CREATED).body(criado);
     }
 
     @GetMapping
@@ -23,10 +31,27 @@ public class PedidoController {
         return pedidoService.listarPedidos();
     }
 
+    @GetMapping("/{id}")
+    public ResponseEntity<Pedido> buscarPorId(@PathVariable String id) {
+        return pedidoService.buscarPorId(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
     @PutMapping("/{id}/status")
     public Pedido atualizarStatus(@PathVariable String id, @RequestParam String status) {
         return pedidoService.atualizarStatus(id, status);
     }
-    
-    
+
+    // RF04 - exclusivo do GERENTE (regra de rota no SecurityConfig + @PreAuthorize no serviço)
+    @PutMapping("/{id}/desconto")
+    public Pedido aplicarDesconto(@PathVariable String id, @RequestBody DescontoRequest requisicao) {
+        return pedidoService.aplicarDesconto(id, requisicao == null ? null : requisicao.percentual());
+    }
+
+    // RF04 - exclusivo do GERENTE
+    @PostMapping("/{id}/cancelar")
+    public Pedido cancelarPedido(@PathVariable String id, @RequestBody CancelamentoRequest requisicao) {
+        return pedidoService.cancelarPedido(id, requisicao == null ? null : requisicao.justificativa());
+    }
 }

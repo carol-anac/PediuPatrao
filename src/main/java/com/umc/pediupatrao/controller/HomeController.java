@@ -1,5 +1,9 @@
 package com.umc.pediupatrao.controller;
 
+
+import com.umc.pediupatrao.entity.Perfil;
+import com.umc.pediupatrao.exception.RegraNegocioException;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.umc.pediupatrao.entity.Cliente;
@@ -11,6 +15,8 @@ import com.umc.pediupatrao.service.PedidoService;
 import com.umc.pediupatrao.service.ProdutoService;
 import com.umc.pediupatrao.service.UsuarioService;
 import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -48,8 +54,14 @@ public class HomeController {
         return "layout";
     }
 
+    @GetMapping("/dashboard")
+    public String dashboard(Model model) {
+        model.addAttribute("content", "dashboard :: content");
+        return "layout";
+    }
+
     // ========================
-    // USUÁRIOS
+    // USUÁRIOS (somente ADMIN)
     // ========================
     @GetMapping("/usuarios")
     public String listarUsuarios(Model model) {
@@ -63,6 +75,7 @@ public class HomeController {
     @GetMapping("/usuarios/novo")
     public String novoUsuarioForm(Model model) {
         model.addAttribute("usuario", new Usuario());
+        model.addAttribute("perfis", Perfil.values());
         model.addAttribute("content", "usuarios/form :: content");
         return "layout";
     }
@@ -71,6 +84,7 @@ public class HomeController {
     public String editarUsuarioForm(@PathVariable String id, Model model,
             RedirectAttributes redirectAttributes) {
         boolean encontrado = usuarioService.buscarPorId(id).map(u -> {
+            u.setPassword(null); // nunca enviar o hash da senha para o formulário
             model.addAttribute("usuario", u);
             return true;
         }).orElse(false);
@@ -80,6 +94,7 @@ public class HomeController {
             return "redirect:/usuarios";
         }
 
+        model.addAttribute("perfis", Perfil.values());
         model.addAttribute("content", "usuarios/form :: content");
         return "layout";
     }
@@ -87,8 +102,12 @@ public class HomeController {
     @PostMapping("/usuarios/salvar")
     public String salvarUsuario(@ModelAttribute Usuario usuario,
             RedirectAttributes redirectAttributes) {
-        usuarioService.salvarUsuario(usuario);
-        redirectAttributes.addFlashAttribute("sucesso", "Usuário criado com sucesso!");
+        try {
+            usuarioService.criarUsuario(usuario);
+            redirectAttributes.addFlashAttribute("sucesso", "Usuário criado com sucesso!");
+        } catch (RegraNegocioException e) {
+            redirectAttributes.addFlashAttribute("erro", e.getMessage());
+        }
         return "redirect:/usuarios";
     }
 
@@ -96,16 +115,24 @@ public class HomeController {
     public String atualizarUsuario(@PathVariable String id,
             @ModelAttribute Usuario usuario,
             RedirectAttributes redirectAttributes) {
-        usuarioService.atualizarUsuario(id, usuario);
-        redirectAttributes.addFlashAttribute("sucesso", "Usuário atualizado com sucesso!");
+        try {
+            usuarioService.atualizarUsuario(id, usuario);
+            redirectAttributes.addFlashAttribute("sucesso", "Usuário atualizado com sucesso!");
+        } catch (RegraNegocioException e) {
+            redirectAttributes.addFlashAttribute("erro", e.getMessage());
+        }
         return "redirect:/usuarios";
     }
 
     @PostMapping("/usuarios/deletar/{id}")
     public String deletarUsuario(@PathVariable String id,
             RedirectAttributes redirectAttributes) {
-        usuarioService.deletarUsuario(id);
-        redirectAttributes.addFlashAttribute("sucesso", "Usuário removido com sucesso!");
+        try {
+            usuarioService.deletarUsuario(id);
+            redirectAttributes.addFlashAttribute("sucesso", "Usuário removido com sucesso!");
+        } catch (RegraNegocioException e) {
+            redirectAttributes.addFlashAttribute("erro", e.getMessage());
+        }
         return "redirect:/usuarios";
     }
 
@@ -115,12 +142,31 @@ public class HomeController {
     @GetMapping("/pedidos")
     public String pedidos(Model model) {
         List<Pedido> pedidos = pedidoService.listarPedidos();
+
+        // Mapa id -> nome para mostrar o nome do cliente na lista
+        Map<String, String> nomesClientes = new HashMap<>();
+        for (Cliente c : clienteService.listarClientes()) {
+            nomesClientes.put(c.getId(), c.getNome());
+        }
+
         model.addAttribute("pedidos", pedidos);
+        model.addAttribute("nomesClientes", nomesClientes);
         model.addAttribute("content", "pedidos :: content");
         log.info("Carregando fragmento: pedidos :: content");
         return "layout";
     }
 
+    @GetMapping("/pedidos/novo")
+    public String novoPedidoForm(Model model) {
+        List<Produto> produtosAtivos = produtoService.listarProdutos().stream()
+                .filter(p -> !Boolean.FALSE.equals(p.getAtivo()) && p.getPreco() != null)
+                .toList();
+
+        model.addAttribute("clientes", clienteService.listarClientes());
+        model.addAttribute("produtos", produtosAtivos);
+        model.addAttribute("content", "pedidos/form :: content");
+        return "layout";
+    }
     // ========================
     // PRODUTOS
     // ========================

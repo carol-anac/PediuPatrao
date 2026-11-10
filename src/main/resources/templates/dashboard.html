@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<section class="dashboard-page" th:fragment="content">
+    <div class="dashboard-heading">
+        <div>
+            <p class="dashboard-eyebrow">PEDIU PATRÃO · ADMINISTRAÇÃO</p>
+            <h1>Dashboard de vendas</h1>
+            <p class="text-muted mb-0">Acompanhe os pedidos e o desempenho do estabelecimento.</p>
+        </div>
+        <form id="filtroDashboard" class="dashboard-filter">
+            <label for="inicio">De</label>
+            <input class="form-control" id="inicio" name="inicio" type="date" required>
+            <label for="fim">Até</label>
+            <input class="form-control" id="fim" name="fim" type="date" required>
+            <button class="btn btn-primary" type="submit"><i class="bi bi-funnel"></i> Aplicar</button>
+        </form>
+    </div>
+
+    <div id="dashboardErro" class="alert alert-danger d-none" role="alert"></div>
+    <div id="dashboardCarregando" class="text-muted py-3">Carregando indicadores...</div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-12 col-sm-6 col-xl-3">
+            <article class="dashboard-kpi">
+                <div class="kpi-icon kpi-orange"><i class="bi bi-currency-dollar"></i></div>
+                <div><span>Vendas no período</span><strong id="totalVendas">—</strong></div>
+            </article>
+        </div>
+        <div class="col-12 col-sm-6 col-xl-3">
+            <article class="dashboard-kpi">
+                <div class="kpi-icon kpi-blue"><i class="bi bi-receipt"></i></div>
+                <div><span>Pedidos considerados</span><strong id="quantidadePedidos">—</strong></div>
+            </article>
+        </div>
+        <div class="col-12 col-sm-6 col-xl-3">
+            <article class="dashboard-kpi">
+                <div class="kpi-icon kpi-green"><i class="bi bi-basket"></i></div>
+                <div><span>Ticket médio</span><strong id="ticketMedio">—</strong></div>
+            </article>
+        </div>
+        <div class="col-12 col-sm-6 col-xl-3">
+            <article class="dashboard-kpi">
+                <div class="kpi-icon kpi-purple"><i class="bi bi-hourglass-split"></i></div>
+                <div><span>Em andamento</span><strong id="pedidosEmAndamento">—</strong></div>
+            </article>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-12 col-xl-8">
+            <article class="dashboard-panel h-100">
+                <div class="panel-heading"><div><h2>Vendas ao longo do tempo</h2><p>Valor por dia no período selecionado</p></div></div>
+                <div class="chart-area"><canvas id="graficoVendas" aria-label="Gráfico de vendas por dia"></canvas></div>
+            </article>
+        </div>
+        <div class="col-12 col-xl-4">
+            <article class="dashboard-panel h-100">
+                <div class="panel-heading"><div><h2>Situação dos pedidos</h2><p>Quantidade por status</p></div></div>
+                <div class="chart-area chart-area-donut"><canvas id="graficoStatus" aria-label="Gráfico de pedidos por status"></canvas></div>
+            </article>
+        </div>
+    </div>
+
+    <article class="dashboard-panel mb-4">
+        <div class="panel-heading"><div><h2>Produtos mais vendidos</h2><p>Ranking por quantidade no período</p></div></div>
+        <div class="table-responsive">
+            <table class="table align-middle mb-0 dashboard-table">
+                <thead><tr><th>#</th><th>Produto</th><th class="text-end">Unidades</th><th class="text-end">Vendas brutas</th></tr></thead>
+                <tbody id="produtosMaisVendidos"><tr><td colspan="4" class="text-muted text-center py-4">Carregando...</td></tr></tbody>
+            </table>
+        </div>
+    </article>
+
+    <script th:src="@{/plugins/chart.js/Chart.min.js}"></script>
+    <script th:src="@{/js/dashboard.js}"></script>
+</section>
+</body>
+</html>

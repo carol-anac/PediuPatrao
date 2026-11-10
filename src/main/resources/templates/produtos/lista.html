@@ -1,95 +1,179 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
-    <head>
-        <meta charset="UTF-8">
-        <title>Gerenciar Produtos</title>
-        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-        <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
-        <link rel="stylesheet" th:href="@{/css/style.css}">
-    </head>
-    <body>
-        <!-- Sidebar incluído como fragmento -->
-        <aside>
-            <div th:replace="~{fragments/sidebar :: sidebar}"></div>
-        </aside>
+<head>
+    <title>Produtos</title>
+</head>
+<body>
 
-        <div class="container mt-5">
-            <h1 class="mb-4">Gestão de Produtos</h1>
+<div th:fragment="content">
 
-            <!-- Botão para abrir o formulário -->
-            <button class="btn btn-primary mb-3" data-bs-toggle="collapse" data-bs-target="#formularioProduto">
-                Novo Produto
-            </button>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold mb-0">
+            <i class="bi bi-box-seam me-2 text-primary"></i>Produtos
+        </h2>
+        <button type="button" class="btn btn-primary" onclick="novoProduto()">
+            <i class="bi bi-plus-lg me-1"></i> Novo Produto
+        </button>
+    </div>
 
-            <!-- Formulário de Cadastro -->
-            <div class="collapse" id="formularioProduto">
-                <div class="card card-body">
-                    <form th:action="@{/api/produtos}" method="post" id="produtoForm">
-                        <div class="mb-3">
-                            <label for="nome" class="form-label">Nome do Produto</label>
-                            <input type="text" id="nome" name="nome" class="form-control" placeholder="Nome do Produto" required>
-                        </div>
-
-                        <div class="mb-3">
-                            <label for="tipo" class="form-label">Tipo do Produto</label>
-                            <select id="tipo" name="tipo" class="form-select" required>
-                                <option value="" disabled selected>Selecione o Tipo</option>
-                                <option value="Pizza">Pizza</option>
-                                <option value="Lanche">Lanche</option>
-                                <option value="Bebida">Bebida</option>
-                                <option value="Porção">Porção</option>
-                                <option value="Adicional">Adicional</option>
-                            </select>
-                        </div>
-
-                        <div class="mb-3">
-                            <label for="preco" class="form-label">Preço</label>
-                            <input type="number" id="preco" name="preco" class="form-control" placeholder="Preço (R$)" step="0.01" required>
-                        </div>
-
-                        <div class="form-check mb-3">
-                            <input type="checkbox" id="ativo" name="ativo" class="form-check-input">
-                            <label for="ativo" class="form-check-label">Produto Ativo</label>
-                        </div>
-
-                        <div class="d-flex justify-content-end">
-                            <button type="submit" class="btn btn-success">Salvar</button>
-                        </div>
-                    </form>
+    <!-- Formulário (cadastro e edição) -->
+    <div class="card shadow-sm mb-4" id="cartaoProduto" style="display:none;">
+        <div class="card-body">
+            <h5 class="mb-3" id="tituloForm">Novo produto</h5>
+            <input type="hidden" id="produtoId">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label for="nome" class="form-label">Nome</label>
+                    <input type="text" id="nome" class="form-control" maxlength="80" placeholder="Ex.: Pizza Calabresa">
+                </div>
+                <div class="col-md-3">
+                    <label for="tipo" class="form-label">Tipo</label>
+                    <select id="tipo" class="form-select">
+                        <option value="Pizza">Pizza</option>
+                        <option value="Esfiha">Esfiha</option>
+                        <option value="Lanche">Lanche</option>
+                        <option value="Bebida">Bebida</option>
+                        <option value="Porção">Porção</option>
+                        <option value="Adicional">Adicional</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="preco" class="form-label">Preço (R$)</label>
+                    <input type="number" id="preco" class="form-control" step="0.01" min="0.01" placeholder="45.00">
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <div class="form-check">
+                        <input type="checkbox" id="ativo" class="form-check-input" checked>
+                        <label for="ativo" class="form-check-label">Produto ativo</label>
+                    </div>
                 </div>
             </div>
+            <div class="mt-3 d-flex justify-content-end gap-2">
+                <button type="button" class="btn btn-outline-secondary" onclick="fecharForm()">Cancelar</button>
+                <button type="button" class="btn btn-success" onclick="salvarProduto()">Salvar</button>
+            </div>
+        </div>
+    </div>
 
-            <!-- Listagem de Produtos -->
-            <table class="table table-bordered table-striped mt-3">
+    <!-- Tabela -->
+    <div class="card shadow-sm">
+        <div class="card-body p-0 table-responsive">
+            <table class="table table-hover align-middle mb-0">
                 <thead class="table-dark">
                     <tr>
-                        <th>ID</th>
-                        <th>Nome</th>
+                        <th class="ps-4">Nome</th>
                         <th>Tipo</th>
                         <th>Preço</th>
                         <th>Ativo</th>
-                        <th>Ações</th>
+                        <th class="text-end pe-4">Ações</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <!-- Loop para listar os produtos -->
+                    <tr th:if="${#lists.isEmpty(produtos)}">
+                        <td colspan="5" class="text-center text-muted py-5">Nenhum produto cadastrado.</td>
+                    </tr>
                     <tr th:each="produto : ${produtos}">
-                        <td th:text="${produto.id}"></td>
-                        <td th:text="${produto.nome}"></td>
+                        <td class="ps-4" th:text="${produto.nome}"></td>
                         <td th:text="${produto.tipo}"></td>
-                        <td th:text="${#numbers.formatDecimal(produto.preco, 1, 'COMMA', 2, 'POINT')}"></td>
-                        <td th:text="${produto.ativo ? 'Sim' : 'Não'}">Sim</td>
+                        <td th:text="${produto.preco != null} ? 'R$ ' + ${#numbers.formatDecimal(produto.preco, 1, 'POINT', 2, 'COMMA')} : '-'"></td>
                         <td>
-                            <a th:href="@{/api/produtos/{id}(id=${produto.id})}" class="btn btn-warning btn-sm">Editar</a>
-                            <a th:href="@{/api/produtos/{id}(id=${produto.id})}" class="btn btn-danger btn-sm" 
-                               onclick="return confirm('Tem certeza que deseja excluir este produto?');">
-                                Excluir
-                            </a>
+                            <span class="badge"
+                                  th:classappend="${produto.ativo == null or produto.ativo} ? 'bg-success' : 'bg-secondary'"
+                                  th:text="${produto.ativo == null or produto.ativo} ? 'Sim' : 'Não'"></span>
+                        </td>
+                        <td class="text-end pe-4 text-nowrap">
+                            <button type="button" class="btn btn-sm btn-outline-warning me-1"
+                                    th:data-id="${produto.id}" th:data-nome="${produto.nome}"
+                                    th:data-tipo="${produto.tipo}" th:data-preco="${produto.preco}"
+                                    th:data-ativo="${produto.ativo == null or produto.ativo}"
+                                    onclick="editarProduto(this)">Editar</button>
+                            <button type="button" class="btn btn-sm btn-outline-danger"
+                                    th:data-id="${produto.id}"
+                                    onclick="excluirProduto(this)">Excluir</button>
                         </td>
                     </tr>
                 </tbody>
             </table>
         </div>
-        <script th:src="@{/js/script.js}"></script>
-    </body>
+    </div>
+
+    <script>
+        function csrfHeaders() {
+            const token = document.querySelector('meta[name="_csrf"]');
+            const header = document.querySelector('meta[name="_csrf_header"]');
+            const h = { 'Content-Type': 'application/json' };
+            if (token && header) { h[header.content] = token.content; }
+            return h;
+        }
+
+        async function enviarProduto(url, metodo, corpo) {
+            try {
+                const r = await fetch(url, {
+                    method: metodo,
+                    headers: csrfHeaders(),
+                    body: corpo ? JSON.stringify(corpo) : undefined
+                });
+                if (r.ok) { location.reload(); return; }
+                if (r.status === 403) { alert('Acesso negado: seu perfil não pode alterar produtos.'); return; }
+                let msg = 'Erro ' + r.status;
+                try { const d = await r.json(); if (d.erro) msg = d.erro; } catch (e) { }
+                alert(msg);
+            } catch (e) {
+                alert('Falha de comunicação com o servidor.');
+            }
+        }
+
+        function abrirForm(titulo) {
+            document.getElementById('tituloForm').textContent = titulo;
+            document.getElementById('cartaoProduto').style.display = 'block';
+        }
+
+        function fecharForm() {
+            document.getElementById('cartaoProduto').style.display = 'none';
+        }
+
+        function novoProduto() {
+            document.getElementById('produtoId').value = '';
+            document.getElementById('nome').value = '';
+            document.getElementById('tipo').value = 'Pizza';
+            document.getElementById('preco').value = '';
+            document.getElementById('ativo').checked = true;
+            abrirForm('Novo produto');
+        }
+
+        function editarProduto(btn) {
+            document.getElementById('produtoId').value = btn.dataset.id;
+            document.getElementById('nome').value = btn.dataset.nome || '';
+            document.getElementById('tipo').value = btn.dataset.tipo || 'Pizza';
+            document.getElementById('preco').value = btn.dataset.preco || '';
+            document.getElementById('ativo').checked = btn.dataset.ativo === 'true';
+            abrirForm('Editar produto');
+        }
+
+        function salvarProduto() {
+            const id = document.getElementById('produtoId').value;
+            const produto = {
+                nome: document.getElementById('nome').value.trim(),
+                tipo: document.getElementById('tipo').value,
+                preco: parseFloat(document.getElementById('preco').value),
+                ativo: document.getElementById('ativo').checked
+            };
+            if (!produto.nome) { alert('Informe o nome.'); return; }
+            if (isNaN(produto.preco) || produto.preco <= 0) { alert('Informe um preço maior que zero.'); return; }
+            if (id) {
+                enviarProduto('/api/produtos/' + encodeURIComponent(id), 'PUT', produto);
+            } else {
+                enviarProduto('/api/produtos', 'POST', produto);
+            }
+        }
+
+        function excluirProduto(btn) {
+            if (!confirm('Tem certeza que deseja excluir este produto?')) return;
+            enviarProduto('/api/produtos/' + encodeURIComponent(btn.dataset.id), 'DELETE');
+        }
+    </script>
+
+</div>
+
+</body>
 </html>
